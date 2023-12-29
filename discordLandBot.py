@@ -14,7 +14,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.all()
 intents.messages = True
 
-initial_activity = discord.Game(name="NFT Prices")
+initial_activity = discord.Game(name="Write /bothelp")
 
 bot = commands.Bot(command_prefix='/', intents=intents,
                    activity=initial_activity)
@@ -28,7 +28,7 @@ async def test(ctx, arg):
 
 @bot.command()
 async def bothelp(ctx):
-    await ctx.send("Available commands: test (arg), joke, rename (arg), update.")
+    await ctx.send("Available commands: bothelp, test (arg), joke, rename (arg), update.")
 
 
 @bot.command()
