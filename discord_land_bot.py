@@ -4,7 +4,7 @@ import requests
 import random
 
 from dotenv import load_dotenv
-from dadJokes import formatted_jokes
+from dad_jokes import formatted_jokes
 from discord.ext import commands
 
 load_dotenv()
