@@ -2,12 +2,16 @@ import os
 import discord
 import requests
 import random
+import asyncio
 
 from dotenv import load_dotenv
 from dad_jokes import formatted_jokes
 from discord.ext import commands
+from logger import setup_logger
 
 load_dotenv()
+
+logger = setup_logger()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -21,8 +25,8 @@ bot = commands.Bot(command_prefix='/', intents=intents,
 
 
 @bot.command()
-async def test(ctx, arg):
-    print("Command executed")
+async def test(ctx, *, arg):
+    logger.info("Command executed")
     await ctx.send(arg)
 
 
@@ -39,7 +43,7 @@ async def joke(ctx):
 
 
 @bot.command()
-async def rename(ctx, name):
+async def rename(ctx, *, name):
     await bot.user.edit(username=name)
 
 OPENSEA_API_URL = 'https://api.opensea.io/api/v2/listings/collection/pixels-farm/best?limit=1'
@@ -80,11 +84,53 @@ async def update(ctx):
         else:
             await ctx.send('No listings found in the response.')
     except requests.exceptions.HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        logger.error(f'HTTP error occurred: {http_err}')
         await ctx.send('An HTTP error occurred while fetching the collection floor price.')
     except Exception as e:
-        print(f'An error occurred: {e}')
+        logger.error(f'An error occurred: {e}')
         await ctx.send('An error occurred while fetching the collection floor price.')
+
+
+async def update_price():
+    await bot.wait_until_ready()
+
+    while not bot.is_closed():
+        try:
+            headers = {'Accept': 'application/json', 'X-API-KEY': API_KEY}
+            response = requests.get(OPENSEA_API_URL, headers=headers)
+            response.raise_for_status()
+
+            collection_data = response.json()
+            listings = collection_data.get('listings', [])
+
+            if listings:
+                first_listing = listings[0]
+                price_in_wei = first_listing.get(
+                    'price', {}).get('current', {}).get('value')
+
+                if price_in_wei:
+                    price_in_eth = float(price_in_wei) / (10 ** 18)
+                    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'💰 Floor: {price_in_eth} ETH'))
+                    logger.info(
+                        f'Collection floor price updated to {price_in_eth} ETH')
+                else:
+                    logger.error(
+                        'Unable to fetch price from the first listing.')
+            else:
+                logger.error(
+                    'No listings found in the response.')
+
+            await asyncio.sleep(600)
+        except requests.exceptions.HTTPError as http_err:
+            logger.error(f'HTTP error occurred: {http_err}')
+        except Exception as e:
+            logger.error(f'An error occurred: {e}')
+
+
+@bot.event
+async def on_ready():
+    logger.info(f'Logged in as {bot.user.name}')
+    bot.loop.create_task(update_price())
 
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
 bot.run(DISCORD_TOKEN)
