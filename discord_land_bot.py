@@ -77,7 +77,7 @@ async def update(ctx):
                 eth_price_pln = eth_prices.get('PLN') * price_in_eth
                 eth_ilosc_harnas = float(eth_price_pln) / (3.39)
 
-                await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'💰 {eth_price_usd:.2f} USD | {eth_price_pln:.2f} PLN'))
+                # await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'💰 {eth_price_usd:.2f} USD | {eth_price_pln:.2f} PLN'))
                 await ctx.send(f'Collection floor price (first listing) updated to {price_in_eth} ETH | ${eth_price_usd:.2f} USD | {eth_price_pln:.2f} PLN | Harnaś cans {eth_ilosc_harnas:.0f} ')
             else:
                 await ctx.send('Unable to fetch price from the first listing.')
@@ -131,6 +131,13 @@ async def update_price():
 async def on_ready():
     logger.info(f'Logged in as {bot.user.name}')
     bot.loop.create_task(update_price())
+
+
+@bot.event
+async def on_command(ctx):
+    author = ctx.author.name
+    command_content = ctx.message.content
+    logger.info(f'Command executed by {author}: {command_content}')
 
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
 bot.run(DISCORD_TOKEN)
